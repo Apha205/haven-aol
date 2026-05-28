@@ -1,0 +1,56 @@
+name: Test Python packages
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-vetkeys:
+    name: Test haven-aol-vetkeys (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust tests
+        working-directory: packages/python/rust_ext
+        run: cargo test
+
+  test-python:
+    name: Test haven-aol (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    needs: test-vetkeys
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Rust toolchain (for maturin)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and install haven-aol-vetkeys
+        run: |
+          pip install maturin
+          maturin develop --release
+        working-directory: packages/python/rust_ext
+
+      - name: Install haven-aol
+        run: pip install -e ".[dev]"
+        working-directory: packages/python
+
+      - name: Python tests
+        run: pytest tests/
+        working-directory: packages/python

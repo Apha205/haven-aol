@@ -1,0 +1,83 @@
+name: Publish haven-aol to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "haven-aol-v*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to PyPI (uncheck for dry-run)"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  # ── Verify haven-aol-vetkeys is available on PyPI ────────────────
+  check-dependency:
+    name: Verify haven-aol-vetkeys on PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check dependency is resolvable
+        run: |
+          pip install --dry-run "haven-aol-vetkeys>=0.1.0"
+        # Fails the build if the native extension isn't published yet
+
+  # ── Build sdist + wheel ──────────────────────────────────────────
+  build:
+    name: Build haven-aol
+    needs: check-dependency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build sdist and wheel
+        run: python -m build
+        working-directory: packages/python
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: packages/python/dist/*
+
+  # ── Publish to PyPI ──────────────────────────────────────────────
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || inputs.publish
+    environment:
+      name: pypi-haven-aol
+      url: https://pypi.org/p/haven-aol
+    permissions:
+      id-token: write   # Required for trusted publishing (OIDC)
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          skip-existing: true
