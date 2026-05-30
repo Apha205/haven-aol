@@ -2,9 +2,7 @@ name: Publish haven-aol to PyPI
 
 on:
   push:
-    tags:
-      - "v*"
-      - "haven-aol-v*"
+        branch: master
   workflow_dispatch:
     inputs:
       publish:
@@ -62,10 +60,7 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.publish
-    environment:
-      name: pypi-haven-aol
-      url: https://pypi.org/p/haven-aol
+    
     permissions:
       id-token: write   # Required for trusted publishing (OIDC)
 
