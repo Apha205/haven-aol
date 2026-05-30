@@ -1,41 +1,22 @@
 name: Publish haven-aol-vetkeys to PyPI
 
 on:
-  push: 
-       branch: main
-        
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish to PyPI (uncheck for dry-run)"
+        description: "Publish to PyPI"
         type: boolean
         required: false
-        default: false
+        default: true
 
 jobs:
-  # ── Build native wheels on each platform ─────────────────────────
   build-wheels:
-    name: Build wheels (${{ matrix.os }} / ${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Linux
-          - os: ubuntu-latest
-            target: x86_64
-            manylinux: manylinux2014
-          - os: ubuntu-latest
-            target: aarch64
-            manylinux: manylinux2014
-          # macOS
-          - os: macos-13
-            target: x86_64
-          - os: macos-14
-            target: aarch64
-          # Windows
-          - os: windows-latest
-            target: x86_64
+    name: Build Windows Wheel
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -47,37 +28,32 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}-unknown-linux-gnu
 
-      - name: Build wheels
+      - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
+          target: x86_64
           args: --release --strip --manifest-path packages/python/rust_ext/Cargo.toml
-          # Produces one wheel per Python version (3.10–3.13)
 
-      - name: Upload wheels
+      - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.target }}
+          name: wheels-windows
           path: target/wheels/*.whl
 
-  # ── Publish to PyPI ──────────────────────────────────────────────
   publish:
     name: Publish to PyPI
     needs: build-wheels
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write  
+      id-token: write
+
     steps:
-      - name: Download all wheels
+      - name: Download wheel artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: wheels-*
-          merge: true
+          name: wheels-windows
           path: dist
 
       - name: Publish to PyPI
