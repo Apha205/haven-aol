@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows
-          path: target/wheels/*.whl
+          path: packages/python/rust_ext/wheels/*.whl
 
   publish:
     name: Publish to PyPI
@@ -54,7 +54,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: wheels-windows
-          path: target/wheels/*.whl
+          path: packages/python/rust_ext/wheels/*.whl
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
