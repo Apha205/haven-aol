@@ -6,12 +6,6 @@ on:
       - main
 
   workflow_dispatch:
-    inputs:
-      publish:
-        description: "Publish to PyPI"
-        type: boolean
-        required: false
-        default: true
 
 jobs:
   build-wheels:
