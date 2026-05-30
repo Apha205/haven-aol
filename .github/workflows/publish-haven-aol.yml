@@ -2,7 +2,8 @@ name: Publish haven-aol to PyPI
 
 on:
   push:
-        branch: master
+       branches:
+              - main
   workflow_dispatch:
     inputs:
       publish:
